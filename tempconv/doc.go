@@ -70,7 +70,8 @@
 //
 //	import (
 //	    "fmt"
-//	    "gitflic.ru/mickeyzzz/tempconv"
+
+//	    "github.com/MiCkEyZzZ/tempconv/tempconv"
 //	)
 //
 //	func main() {
