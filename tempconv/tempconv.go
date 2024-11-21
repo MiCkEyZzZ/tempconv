@@ -22,6 +22,8 @@ const (
 	absoluteZeroR Rankine = 0
 	// absoluteZeroRe - абсолютный ноль по Реомюру (-218.52°Re)
 	absoluteZeroRe Reaumur = -218.52
+	// absoluteZeroDe - абсолютный ноль по Делислю (559.725°De)
+	absoluteZeroDe Delisle = 559.725
 )
 
 // Temperature - интерфейс для работы с температурой.
@@ -31,6 +33,7 @@ type Temperature interface {
 	ToKelvin() Kelvin
 	ToRankine() Rankine
 	ToReaumur() Reaumur
+	ToDelisle() Delisle
 	String() string
 	ScaleName() string
 }
@@ -47,6 +50,8 @@ type (
 	Rankine float64
 	// Reaumur - тип для шкалы Реомюра
 	Reaumur float64
+	// Delisle - тип для шкалы Делисля
+	Delisle float64
 )
 
 // Константы для преобразования температур
@@ -63,6 +68,10 @@ const (
 	cToROffset = cToKOffset
 	// cToReMultiplier - коэффициент для преобразования из Цельсия в Реомюр
 	cToReMultiplier = 4.0 / 5.0
+	// cToDeOffset - смещение для преобразования из Цельсия в Делисль
+	cToDeOffset = 100.0
+	// cToDeMultiplier - коэффициент для преобразования из Цельсия в Делисля
+	cToDeMultiplier = 3.0 / 2.0
 	// fToCOffset - смещение для преобразования из Фаренгейта в Цельсий
 	fToCOffset = cToFOffset
 	// fToCMultiplier - коэффициент для преобразования из Фаренгейта в Цельсий
@@ -137,6 +146,16 @@ func NewReaumur(re float64) (Reaumur, error) {
 	return Reaumur(re), nil
 }
 
+// NewDelisle создает объект Делисля и проверяет, что значение температуры
+// не ниже абсолютного нуля по Делислю (0°De). Если значение корректно,
+// возвращается объект Делисля, иначе - ошибка.
+func NewDelisle(de float64) (Delisle, error) {
+	if err := validateTemperature(de, float64(absoluteZeroDe), "°De"); err != nil {
+		return 0, err
+	}
+	return Delisle(de), nil
+}
+
 // Реализация методов для типа Celsius
 
 // ToCelsius возвращает температуру в шкале Цельсия (сама по себе).
@@ -158,6 +177,10 @@ func (c Celsius) ToRankine() Rankine { return Rankine((c + cToROffset) * cToRMul
 // ToReaumur преобразует температуру из Цельсия в Реомюр.
 // Метод возвращает объект типа Reaumur, который представляет температуру в шкале Реомюра.
 func (c Celsius) ToReaumur() Reaumur { return Reaumur(c * cToReMultiplier) }
+
+// ToDelisle преобразует температуру из Цельсия в Делисль.
+// Метод возвращает объект типа Delisle, который представляет температуру в шкале Делисля.
+func (c Celsius) ToDelisle() Delisle { return Delisle((cToDeOffset - c) * cToDeMultiplier) }
 
 // String возвращает строковое представление температуры в шкале Цельсия.
 func (c Celsius) String() string { return fmt.Sprintf("%.2f°C", c) }
@@ -187,6 +210,10 @@ func (f Fahrenheit) ToRankine() Rankine { return Rankine(f + fToROffset) }
 // Метод возвращает объект типа Reaumur, который представляет температуру в шкале Реомюра.
 func (f Fahrenheit) ToReaumur() Reaumur { return f.ToCelsius().ToReaumur() }
 
+// ToDelisle преобразует температуру из Фаренгейта в Делисль.
+// Метод возвращает объект типа Delisle, который представляет температуру в шкале Делисля.
+func (f Fahrenheit) ToDelisle() Delisle { return f.ToCelsius().ToDelisle() }
+
 // String возвращает строковое представление температуры в шкале Фаренгейта.
 func (f Fahrenheit) String() string { return fmt.Sprintf("%.2f°F", f) }
 
@@ -214,6 +241,10 @@ func (k Kelvin) ToRankine() Rankine { return Rankine(k * kToRMultiplier) }
 // ToReaumur преобразует температуру из Кельвина в Реомюр.
 // Метод возвращает объект типа Reaumur, который представляет температуру в шкале Реомюра.
 func (k Kelvin) ToReaumur() Reaumur { return k.ToCelsius().ToReaumur() }
+
+// ToDelisle преобразует температуру из Кельвина в Делисль.
+// Метод возвращает объект типа Delisle, который представляет температуру в шкале Делисля.
+func (k Kelvin) ToDelisle() Delisle { return k.ToCelsius().ToDelisle() }
 
 // String возвращает строковое представление температуры в шкале Кельвина.
 func (k Kelvin) String() string { return fmt.Sprintf("%.2fK", k) }
@@ -243,6 +274,10 @@ func (r Rankine) ToKelvin() Kelvin { return Kelvin(r * rToKMultiplier) }
 // Метод возвращает объект типа Reaumur, который представляет температуру в шкале Реомюра.
 func (r Rankine) ToReaumur() Reaumur { return r.ToCelsius().ToReaumur() }
 
+// ToDelisle преобразует температуру из Ранкина в Делисль.
+// Метод возвращает объект типа Delisle, который представляет температуру в шкале Делисля.
+func (r Rankine) ToDelisle() Delisle { return r.ToCelsius().ToDelisle() }
+
 // String возвращает строковое представление температуры в шкале Ранкина.
 func (r Rankine) String() string { return fmt.Sprintf("%.2f°R", r) }
 
@@ -271,11 +306,47 @@ func (re Reaumur) ToKelvin() Kelvin { return re.ToCelsius().ToKelvin() }
 // Метод возвращает объект типа Rankine, который представляет температуру в шкале Ранкина.
 func (re Reaumur) ToRankine() Rankine { return re.ToCelsius().ToRankine() }
 
+// ToDelisle преобразует температуру из Реомюра в Делисль.
+// Метод возвращает объект типа Delisle, который представляет температуру в шкале Делисля.
+func (re Reaumur) ToDelisle() Delisle { return re.ToCelsius().ToDelisle() }
+
 // String возвращает строковое представление температуры в шкале Реомюра.
 func (re Reaumur) String() string { return fmt.Sprintf("%.2f°Re", re) }
 
 // ScaleName возвращает строковое название шкалы температуры (Реомюр).
 func (re Reaumur) ScaleName() string { return "Reaumur" }
+
+// Реализация методов для типа Delisle
+
+// ToDelisle возвращает температуру в шкале Делисля (сама по себе).
+// Метод возвращает объект типа Delisle, который уже представляет температуру в шкале Делисля.
+func (de Delisle) ToDelisle() Delisle { return de }
+
+// ToCelsius преобразует температуру из Делисля в Цельсий.
+// Метод возвращает объект типа Celsius, который представляет температуру в шкале Цельсия.
+func (de Delisle) ToCelsius() Celsius { return Celsius(cToDeOffset - de/cToDeMultiplier) }
+
+// ToFahrenheit преобразует температуру из Делисля в Фаренгейт.
+// Метод возвращает объект типа Fahrenheit, который представляет температуру в шкале Фаренгейта.
+func (de Delisle) ToFahrenheit() Fahrenheit { return de.ToCelsius().ToFahrenheit() }
+
+// ToKelvin преобразует температуру из Делислю в Кельвин.
+// Метод возвращает объект типа Kelvin, который представляет температуру в шкале Кельвина.
+func (de Delisle) ToKelvin() Kelvin { return de.ToCelsius().ToKelvin() }
+
+// ToRankine преобразует температуру из Делислю в Ранкин.
+// Метод возвращает объект типа Rankine, который представляет температуру в шкале Ранкина.
+func (de Delisle) ToRankine() Rankine { return de.ToCelsius().ToRankine() }
+
+// ToReaumur преобразует температуру из Делислю в Реомюр.
+// Метод возвращает объект типа Reaumur, который представляет температуру в шкале Реомюра.
+func (de Delisle) ToReaumur() Reaumur { return de.ToCelsius().ToReaumur() }
+
+// String возвращает строковое представление температуры в шкале Делисля.
+func (de Delisle) String() string { return fmt.Sprintf("%.2f°De", de) }
+
+// ScaleName возвращает строковое название шкалы температуры (Делислю).
+func (de Delisle) ScaleName() string { return "Delisle" }
 
 // ValidateTemperature проверяет, что температура не ниже абсолютного нуля для
 // соответствующей шкалы и возвращает ошибку, если температура некорректна.
