@@ -147,7 +147,7 @@ func NewReaumur(re float64) (Reaumur, error) {
 }
 
 // NewDelisle создает объект Делисля и проверяет, что значение температуры
-// не ниже абсолютного нуля по Делислю (0°De). Если значение корректно,
+// не ниже абсолютного нуля по Делислю (559.725°De). Если значение корректно,
 // возвращается объект Делисля, иначе - ошибка.
 func NewDelisle(de float64) (Delisle, error) {
 	if err := validateTemperature(de, float64(absoluteZeroDe), "°De"); err != nil {
@@ -343,7 +343,7 @@ func (de Delisle) ToRankine() Rankine { return de.ToCelsius().ToRankine() }
 func (de Delisle) ToReaumur() Reaumur { return de.ToCelsius().ToReaumur() }
 
 // String возвращает строковое представление температуры в шкале Делисля.
-func (de Delisle) String() string { return fmt.Sprintf("%.2f°De", de) }
+func (de Delisle) String() string { return fmt.Sprintf("%.3f°De", de) }
 
 // ScaleName возвращает строковое название шкалы температуры (Делислю).
 func (de Delisle) ScaleName() string { return "Delisle" }
@@ -351,8 +351,16 @@ func (de Delisle) ScaleName() string { return "Delisle" }
 // ValidateTemperature проверяет, что температура не ниже абсолютного нуля для
 // соответствующей шкалы и возвращает ошибку, если температура некорректна.
 func validateTemperature(value, absoluteZero float64, scale string) error {
-	if value < absoluteZero {
-		return fmt.Errorf("%w: %.2f %s ниже абсолютного нуля", ErrBelowAbsoluteZero, value, scale)
+	if scale == "°De" {
+		// Для шкалы Делисля: температура не должна быть выше 559.725°De
+		if value > absoluteZero {
+			return fmt.Errorf("%w: %.2f %s ниже абсолютного нуля", ErrBelowAbsoluteZero, value, scale)
+		}
+	} else {
+		// Для других шкал: температура не должна быть ниже абсолютного нуля
+		if value < absoluteZero {
+			return fmt.Errorf("%w: %.2f %s ниже абсолютного нуля", ErrBelowAbsoluteZero, value, scale)
+		}
 	}
 	return nil
 }

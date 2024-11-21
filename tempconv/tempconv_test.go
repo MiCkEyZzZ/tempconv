@@ -12,6 +12,8 @@ func almostEqual(a, b float64, epsilon float64) bool {
 	return math.Abs(a-b) <= epsilon
 }
 
+// TestNewCelsius проверяет создание объектов Celsius с корректными значениями и
+// ошибкой для значений ниже абсолютного нуля.
 func TestNewCelsius(t *testing.T) {
 	tests := []struct {
 		input    float64
@@ -36,6 +38,8 @@ func TestNewCelsius(t *testing.T) {
 	}
 }
 
+// TestNewFahrenheit проверяет создание объектов Fahrenheit с корректными значениями и
+// ошибкой для значений ниже абсолютного нуля.
 func TestNewFahrenheit(t *testing.T) {
 	tests := []struct {
 		input    float64
@@ -60,6 +64,8 @@ func TestNewFahrenheit(t *testing.T) {
 	}
 }
 
+// TestNewKelvin проверяет создание объектов Kelvin с корректными значениями и ошибкой для
+// значений ниже абсолютного нуля.
 func TestNewKelvin(t *testing.T) {
 	tests := []struct {
 		input    float64
@@ -84,6 +90,8 @@ func TestNewKelvin(t *testing.T) {
 	}
 }
 
+// TestNewRankine проверяет создание объектов Rankine с корректными значениями и ошибкой
+// для значений ниже абсолютного нуля.
 func TestNewRankine(t *testing.T) {
 	tests := []struct {
 		input    float64
@@ -108,6 +116,8 @@ func TestNewRankine(t *testing.T) {
 	}
 }
 
+// TestNewReaumur проверяет создание объектов Reaumur с корректными значениями и ошибкой
+// для значений ниже абсолютного нуля.
 func TestNewReaumur(t *testing.T) {
 	tests := []struct {
 		input    float64
@@ -132,6 +142,33 @@ func TestNewReaumur(t *testing.T) {
 	}
 }
 
+// TestNewDelisle проверяет создание объектов Delisle с корректными значениями и ошибкой
+// для значений ниже абсолютного нуля.
+func TestNewDelisle(t *testing.T) {
+	tests := []struct {
+		input    float64
+		expected Delisle
+		err      error
+	}{
+		{559.725, 559.725, nil},        // Абсолютный ноль в шкале Делисля
+		{0, 0, nil},                    // Точка кипения воды
+		{560, 0, ErrBelowAbsoluteZero}, // Температура ниже абсолютного нуля
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("Delisle %v", tt.input), func(t *testing.T) {
+			d, err := NewDelisle(tt.input)
+			if err != nil && !errors.Is(err, tt.err) {
+				t.Fatalf("expected error %v, got %v", tt.err, err)
+			}
+			if err == nil && d != tt.expected {
+				t.Fatalf("expected %v, got %v", tt.expected, d)
+			}
+		})
+	}
+}
+
+// TestConversions проверяет конверсии температур между различными шкалами.
 func TestConversions(t *testing.T) {
 	tests := []struct {
 		fromCelsius        Celsius
@@ -139,14 +176,15 @@ func TestConversions(t *testing.T) {
 		expectedKelvin     Kelvin
 		expectedRankine    Rankine
 		expectedReaumur    Reaumur
+		expectedDelisle    Delisle
 	}{
-		{0, 32, 273.15, 491.67, 0},
-		{-273.15, -459.67, 0, 0, -218.52},
-		{100, 212, 373.15, 671.67, 80},
+		{0, 32, 273.15, 491.67, 0, 150},
+		{-273.15, -459.67, 0, 0, -218.52, 559.725},
+		{100, 212, 373.15, 671.67, 80, 0},
 	}
 
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("Convert %v", tt.fromCelsius), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Convert %v°C", tt.fromCelsius), func(t *testing.T) {
 			// Проверка конверсии в Фаренгейт
 			if got := float64(tt.fromCelsius.ToFahrenheit()); !almostEqual(got, float64(tt.expectedFahrenheit), 0.01) {
 				t.Errorf("ToFahrenheit() = %v, want %v", got, tt.expectedFahrenheit)
@@ -163,10 +201,17 @@ func TestConversions(t *testing.T) {
 			if got := float64(tt.fromCelsius.ToReaumur()); !almostEqual(got, float64(tt.expectedReaumur), 0.01) {
 				t.Errorf("ToReaumur() = %v, want %v", got, tt.expectedReaumur)
 			}
+			// Проверка конверсии в Делисль
+			if got := float64(tt.fromCelsius.ToDelisle()); !almostEqual(got, float64(tt.expectedDelisle), 0.01) {
+				t.Logf("From Celsius: %v, Calculated Delisle: %v", tt.fromCelsius, tt.fromCelsius.ToDelisle())
+				t.Errorf("ToDelisle() = %v, want %v", got, tt.expectedDelisle)
+			}
 		})
 	}
 }
 
+// TestInvalidTemperatures проверяет обработку ошибок для температур ниже
+// абсолютного нуля.
 func TestInvalidTemperatures(t *testing.T) {
 	tests := []struct {
 		input       float64
@@ -178,6 +223,7 @@ func TestInvalidTemperatures(t *testing.T) {
 		{-1, "Kelvin", ErrBelowAbsoluteZero},
 		{-1, "Rankine", ErrBelowAbsoluteZero},
 		{-219, "Reaumur", ErrBelowAbsoluteZero},
+		{-560, "Delisle", ErrBelowAbsoluteZero},
 	}
 
 	for _, tt := range tests {
@@ -194,6 +240,8 @@ func TestInvalidTemperatures(t *testing.T) {
 				_, err = NewRankine(tt.input)
 			case "Reaumur":
 				_, err = NewReaumur(tt.input)
+			case "Delisle":
+				_, err = NewDelisle(tt.input)
 			}
 
 			if err != nil && !errors.Is(err, tt.expectedErr) {
@@ -203,6 +251,8 @@ func TestInvalidTemperatures(t *testing.T) {
 	}
 }
 
+// TestStringAndScaleName проверяет корректность строкового представления и названия
+// шкалы для различных температур.
 func TestStringAndScaleName(t *testing.T) {
 	tests := []struct {
 		input             Temperature
@@ -214,6 +264,7 @@ func TestStringAndScaleName(t *testing.T) {
 		{Kelvin(273.15), "273.15K", "Kelvin"},
 		{Rankine(491.67), "491.67°R", "Rankine"},
 		{Reaumur(0), "0.00°Re", "Reaumur"},
+		{Delisle(559.725), "559.725°De", "Delisle"},
 	}
 
 	for _, tt := range tests {
