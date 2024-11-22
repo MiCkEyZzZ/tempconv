@@ -168,6 +168,32 @@ func TestNewDelisle(t *testing.T) {
 	}
 }
 
+// TestNewNewton проверяет создание объектов Newton с корректными значениями и ошибкой
+// для значений ниже абсолютного нуля.
+func TestNewNewton(t *testing.T) {
+	tests := []struct {
+		input    float64
+		expected Newton
+		err      error
+	}{
+		{-90.1395, -90.1395, nil},      // Абсолютный ноль в шкале Ньютона
+		{0, 0, nil},                    // Точка замерзания воды
+		{-91, 0, ErrBelowAbsoluteZero}, // Температура ниже абсолютного нуля
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("Newton %v", tt.input), func(t *testing.T) {
+			n, err := NewNewton(tt.input)
+			if err != nil && !errors.Is(err, tt.err) {
+				t.Fatalf("expected error %v, got %v", tt.err, err)
+			}
+			if err == nil && n != tt.expected {
+				t.Fatalf("expected %v, got %v", tt.expected, n)
+			}
+		})
+	}
+}
+
 // TestConversions проверяет конверсии температур между различными шкалами.
 func TestConversions(t *testing.T) {
 	tests := []struct {
@@ -177,10 +203,11 @@ func TestConversions(t *testing.T) {
 		expectedRankine    Rankine
 		expectedReaumur    Reaumur
 		expectedDelisle    Delisle
+		expectedNewton     Newton
 	}{
-		{0, 32, 273.15, 491.67, 0, 150},
-		{-273.15, -459.67, 0, 0, -218.52, 559.725},
-		{100, 212, 373.15, 671.67, 80, 0},
+		{0, 32, 273.15, 491.67, 0, 150, 0},
+		{-273.15, -459.67, 0, 0, -218.52, 559.725, -90.1395},
+		{100, 212, 373.15, 671.67, 80, 0, 33},
 	}
 
 	for _, tt := range tests {
@@ -206,6 +233,10 @@ func TestConversions(t *testing.T) {
 				t.Logf("From Celsius: %v, Calculated Delisle: %v", tt.fromCelsius, tt.fromCelsius.ToDelisle())
 				t.Errorf("ToDelisle() = %v, want %v", got, tt.expectedDelisle)
 			}
+			// Проверка конверсии в Ньютон
+			if got := float64(tt.fromCelsius.ToNewton()); !almostEqual(got, float64(tt.expectedNewton), 0.01) {
+				t.Errorf("ToNewton() = %v, want %v", got, tt.expectedNewton)
+			}
 		})
 	}
 }
@@ -224,6 +255,7 @@ func TestInvalidTemperatures(t *testing.T) {
 		{-1, "Rankine", ErrBelowAbsoluteZero},
 		{-219, "Reaumur", ErrBelowAbsoluteZero},
 		{-560, "Delisle", ErrBelowAbsoluteZero},
+		{-91, "Newton", ErrBelowAbsoluteZero},
 	}
 
 	for _, tt := range tests {
@@ -242,6 +274,8 @@ func TestInvalidTemperatures(t *testing.T) {
 				_, err = NewReaumur(tt.input)
 			case "Delisle":
 				_, err = NewDelisle(tt.input)
+			case "Newton":
+				_, err = NewNewton(tt.input)
 			}
 
 			if err != nil && !errors.Is(err, tt.expectedErr) {
@@ -265,6 +299,7 @@ func TestStringAndScaleName(t *testing.T) {
 		{Rankine(491.67), "491.67°R", "Rankine"},
 		{Reaumur(0), "0.00°Re", "Reaumur"},
 		{Delisle(559.725), "559.725°De", "Delisle"},
+		{Newton(0), "0.00°N", "Newton"},
 	}
 
 	for _, tt := range tests {
