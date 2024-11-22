@@ -24,6 +24,8 @@ const (
 	absoluteZeroRe Reaumur = -218.52
 	// absoluteZeroDe - абсолютный ноль по Делислю (559.725°De)
 	absoluteZeroDe Delisle = 559.725
+	// absoluteZeroN - абсолютный ноль по Ньютону (-90.1395°N)
+	absoluteZeroN Newton = -90.1395
 )
 
 // Temperature - интерфейс для работы с температурой.
@@ -34,6 +36,7 @@ type Temperature interface {
 	ToRankine() Rankine
 	ToReaumur() Reaumur
 	ToDelisle() Delisle
+	ToNewton() Newton
 	String() string
 	ScaleName() string
 }
@@ -52,6 +55,8 @@ type (
 	Reaumur float64
 	// Delisle - тип для шкалы Делисля
 	Delisle float64
+	// Newton - тип для шкалы Ньютона
+	Newton float64
 )
 
 // Константы для преобразования температур
@@ -156,6 +161,16 @@ func NewDelisle(de float64) (Delisle, error) {
 	return Delisle(de), nil
 }
 
+// NewNewton создает объект Ньютон и проверяет, что значение температуры
+// не ниже абсолютного нуля по Ньютону (0°N). Если значение корректно,
+// возвращается объект Ньютон, иначе - ошибка.
+func NewNewton(n float64) (Newton, error) {
+	if err := validateTemperature(n, float64(absoluteZeroN), "°N"); err != nil {
+		return 0, err
+	}
+	return Newton(n), nil
+}
+
 // Реализация методов для типа Celsius
 
 // ToCelsius возвращает температуру в шкале Цельсия (сама по себе).
@@ -181,6 +196,10 @@ func (c Celsius) ToReaumur() Reaumur { return Reaumur(c * cToReMultiplier) }
 // ToDelisle преобразует температуру из Цельсия в Делисль.
 // Метод возвращает объект типа Delisle, который представляет температуру в шкале Делисля.
 func (c Celsius) ToDelisle() Delisle { return Delisle((cToDeOffset - c) * cToDeMultiplier) }
+
+// ToNewton преобразует температуру из Цельсия в Ньютон.
+// Метод возвращает объект типа Newton, который представляет температуру в шкале Ньютона.
+func (c Celsius) ToNewton() Newton { return Newton(c * (33.0 / 100.0)) }
 
 // String возвращает строковое представление температуры в шкале Цельсия.
 func (c Celsius) String() string { return fmt.Sprintf("%.2f°C", c) }
@@ -214,6 +233,10 @@ func (f Fahrenheit) ToReaumur() Reaumur { return f.ToCelsius().ToReaumur() }
 // Метод возвращает объект типа Delisle, который представляет температуру в шкале Делисля.
 func (f Fahrenheit) ToDelisle() Delisle { return f.ToCelsius().ToDelisle() }
 
+// ToNewton преобразует температуру из Фаренгейта в Ньютон.
+// Метод возвращает объект типа Newton, который представляет температуру в шкале Ньютона.
+func (f Fahrenheit) ToNewton() Newton { return f.ToCelsius().ToNewton() }
+
 // String возвращает строковое представление температуры в шкале Фаренгейта.
 func (f Fahrenheit) String() string { return fmt.Sprintf("%.2f°F", f) }
 
@@ -245,6 +268,10 @@ func (k Kelvin) ToReaumur() Reaumur { return k.ToCelsius().ToReaumur() }
 // ToDelisle преобразует температуру из Кельвина в Делисль.
 // Метод возвращает объект типа Delisle, который представляет температуру в шкале Делисля.
 func (k Kelvin) ToDelisle() Delisle { return k.ToCelsius().ToDelisle() }
+
+// ToNewton преобразует температуру из Кельвина в Ньютон.
+// Метод возвращает объект типа Newton, который представляет температуру в шкале Ньютона.
+func (k Kelvin) ToNewton() Newton { return k.ToCelsius().ToNewton() }
 
 // String возвращает строковое представление температуры в шкале Кельвина.
 func (k Kelvin) String() string { return fmt.Sprintf("%.2fK", k) }
@@ -278,6 +305,10 @@ func (r Rankine) ToReaumur() Reaumur { return r.ToCelsius().ToReaumur() }
 // Метод возвращает объект типа Delisle, который представляет температуру в шкале Делисля.
 func (r Rankine) ToDelisle() Delisle { return r.ToCelsius().ToDelisle() }
 
+// ToNewton преобразует температуру из Ранкина в Ньютон.
+// Метод возвращает объект типа Newton, который представляет температуру в шкале Ньютона.
+func (r Rankine) ToNewton() Newton { return r.ToCelsius().ToNewton() }
+
 // String возвращает строковое представление температуры в шкале Ранкина.
 func (r Rankine) String() string { return fmt.Sprintf("%.2f°R", r) }
 
@@ -309,6 +340,10 @@ func (re Reaumur) ToRankine() Rankine { return re.ToCelsius().ToRankine() }
 // ToDelisle преобразует температуру из Реомюра в Делисль.
 // Метод возвращает объект типа Delisle, который представляет температуру в шкале Делисля.
 func (re Reaumur) ToDelisle() Delisle { return re.ToCelsius().ToDelisle() }
+
+// ToNewton преобразует температуру из Реомюра в Ньютон.
+// Метод возвращает объект типа Newton, который представляет температуру в шкале Ньютона.
+func (re Reaumur) ToNewton() Newton { return re.ToCelsius().ToNewton() }
 
 // String возвращает строковое представление температуры в шкале Реомюра.
 func (re Reaumur) String() string { return fmt.Sprintf("%.2f°Re", re) }
@@ -342,11 +377,51 @@ func (de Delisle) ToRankine() Rankine { return de.ToCelsius().ToRankine() }
 // Метод возвращает объект типа Reaumur, который представляет температуру в шкале Реомюра.
 func (de Delisle) ToReaumur() Reaumur { return de.ToCelsius().ToReaumur() }
 
+// ToNewton преобразует температуру из Делисля в Ньютон.
+// Метод возвращает объект типа Newton, который представляет температуру в шкале Ньютона.
+func (de Delisle) ToNewton() Newton { return de.ToCelsius().ToNewton() }
+
 // String возвращает строковое представление температуры в шкале Делисля.
 func (de Delisle) String() string { return fmt.Sprintf("%.3f°De", de) }
 
 // ScaleName возвращает строковое название шкалы температуры (Делислю).
 func (de Delisle) ScaleName() string { return "Delisle" }
+
+// Реализация методов для типа Newton
+
+// ToNewton возвращает температуру в шкале Ньютона (сама по себе).
+// Метод возвращает объект типа Newton, который уже представляет температуру в шкале Ньютона.
+func (n Newton) ToNewton() Newton { return n }
+
+// ToCelsius преобразует температуру из Ньютона в Цельсий.
+// Метод возвращает объект типа Celsius, который представляет температуру в шкале Цельсия.
+func (n Newton) ToCelsius() Celsius { return Celsius(n / (33.0 / 100.0)) }
+
+// ToFahrenheit преобразует температуру из Ньютона в Фаренгейт.
+// Метод возвращает объект типа Fahrenheit, который представляет температуру в шкале Фаренгейта.
+func (n Newton) ToFahrenheit() Fahrenheit { return n.ToCelsius().ToFahrenheit() }
+
+// ToKelvin преобразует температуру из Ньютона в Кельвин.
+// Метод возвращает объект типа Kelvin, который представляет температуру в шкале Кельвина.
+func (n Newton) ToKelvin() Kelvin { return n.ToCelsius().ToKelvin() }
+
+// ToRankine преобразует температуру из Ньютона в Ранкин.
+// Метод возвращает объект типа Rankine, который представляет температуру в шкале Ранкина.
+func (n Newton) ToRankine() Rankine { return n.ToCelsius().ToRankine() }
+
+// ToReaumur преобразует температуру из Ньютона в Реомюр.
+// Метод возвращает объект типа Reaumur, который представляет температуру в шкале Реомюра.
+func (n Newton) ToReaumur() Reaumur { return n.ToCelsius().ToReaumur() }
+
+// ToDelisle преобразует температуру из Ньютона в Делисль.
+// Метод возвращает объект типа Delisle, который представляет температуру в шкале Делисля.
+func (n Newton) ToDelisle() Delisle { return n.ToCelsius().ToDelisle() }
+
+// String возвращает строковое представление температуры в шкале Ньютона.
+func (n Newton) String() string { return fmt.Sprintf("%.2f°N", n) }
+
+// ScaleName возвращает строковое название шкалы температуры (Ньютона).
+func (n Newton) ScaleName() string { return "Newton" }
 
 // ValidateTemperature проверяет, что температура не ниже абсолютного нуля для
 // соответствующей шкалы и возвращает ошибку, если температура некорректна.
